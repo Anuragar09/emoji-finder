@@ -1,14 +1,26 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SplashScreen from '@/components/SplashScreen';
+import GameTabs from '@/components/GameTabs';
+import { GameMode } from '@/types/game';
 
 const Index = () => {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
-  );
+  const [showSplash, setShowSplash] = useState(true);
+  const navigate = useNavigate();
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+  };
+
+  const handleGameSelect = (mode: GameMode) => {
+    navigate(`/game/${mode}`);
+  };
+
+  if (showSplash) {
+    return <SplashScreen onComplete={handleSplashComplete} />;
+  }
+
+  return <GameTabs onGameSelect={handleGameSelect} />;
 };
 
 export default Index;
