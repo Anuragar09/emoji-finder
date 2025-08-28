@@ -100,19 +100,22 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
               {/* Level Selection */}
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold text-foreground">
-                  Select Level
+                  Select Level (1-100)
                 </h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {[1, 2, 3, 4, 5, 6].map((level) => (
-                    <Button
-                      key={level}
-                      onClick={() => onGameSelect(activeTab)}
-                      className={`py-6 text-lg font-semibold bg-gradient-to-r ${tab.color} border-2 border-transparent hover:border-primary neon-glow transition-all duration-300`}
-                      size="lg"
-                    >
-                      Level {level}
-                    </Button>
-                  ))}
+                <div className="max-h-64 overflow-y-auto rounded-lg border border-border bg-card/50 p-4">
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 100 }, (_, i) => i + 1).map((level) => (
+                      <Button
+                        key={level}
+                        onClick={() => onGameSelect(activeTab)}
+                        variant="outline"
+                        className={`aspect-square text-sm font-semibold bg-gradient-to-r ${tab.color} border-2 border-transparent hover:border-primary neon-glow transition-all duration-300 opacity-80 hover:opacity-100`}
+                        size="sm"
+                      >
+                        {level}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
