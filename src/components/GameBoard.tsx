@@ -4,8 +4,9 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { GameCard, GameMode, GameState, GameStats } from '@/types/game';
-import { generateGameData, playSound } from '@/utils/gameUtils';
+import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils';
 import { ArrowLeft, Heart, Timer, RotateCcw, Home, Lightbulb } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface GameBoardProps {
   mode: GameMode;
@@ -16,6 +17,7 @@ interface GameBoardProps {
 
 const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [gameState, setGameState] = useState<GameState>('playing');
   const [cards, setCards] = useState<GameCard[]>([]);
   const [target, setTarget] = useState<string>('');
@@ -111,11 +113,13 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
     });
 
     setTimeout(() => {
-      setStats(prev => ({ 
-        ...prev, 
-        level: prev.level + 1,
-        score: prev.score + (prev.timeLeft * 10)
-      }));
+      setStats(prev => {
+        const newLevel = prev.level + 1;
+        const newScore = prev.score + (prev.timeLeft * 10);
+        // Save progress: unlock next level
+        saveGameProgress(newLevel, mode, newScore);
+        return { ...prev, level: newLevel, score: newScore };
+      });
       initializeGame();
     }, 1500);
   };
@@ -147,7 +151,6 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
   };
 
   const handleRetry = () => {
-    setStats(prev => ({ ...prev, lives: 3 }));
     initializeGame();
   };
 
@@ -209,6 +212,24 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
           <Home className="w-4 h-4" />
           Home
         </Button>
+      </div>
+
+      {/* Mode Switcher */}
+      <div className="max-w-2xl mx-auto mb-4">
+        <div className="flex items-center justify-center gap-2 overflow-x-auto no-scrollbar">
+          {(['emoji','number','alphabet','shape'] as GameMode[]).map((m) => (
+            <Button
+              key={m}
+              variant={m === mode ? 'default' : 'outline'}
+              size="sm"
+              className={`transition-all duration-300 ${m === mode ? 'shadow-neon' : ''}`}
+              onClick={() => navigate(`/game/${m}/${stats.level}`)}
+            >
+              <span className="mr-1">{m === 'emoji' ? '😀' : m === 'number' ? '🔢' : m === 'alphabet' ? '🔤' : '🔶'}</span>
+              <span className="capitalize hidden sm:inline">{m}</span>
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Game Stats */}

@@ -78,7 +78,7 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
       </div>
 
       {/* Active Tab Content */}
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto flex-1 w-full">
         {tabs.map((tab) => (
           <Card
             key={tab.id}
@@ -117,7 +117,9 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
                         key={level}
                         onClick={() => onGameSelect(activeTab, level)}
                         variant="outline"
-                        className={`aspect-square text-sm font-semibold bg-gradient-to-r ${tab.color} border-2 border-transparent hover:border-primary neon-glow transition-all duration-300 opacity-80 hover:opacity-100`}
+                        disabled={level > lastLevel}
+                        className={`aspect-square text-sm font-semibold bg-gradient-to-r ${tab.color} border-2 border-transparent transition-all duration-300
+                          ${level > lastLevel ? 'opacity-40 cursor-not-allowed' : 'hover:border-primary neon-glow opacity-90 hover:opacity-100'}`}
                         size="sm"
                       >
                         {level}
@@ -147,10 +149,8 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
         ))}
       </div>
 
-      <div className="mt-6">
-        <Card className="p-4 text-center bg-card/80 border-dashed border-primary">
-          <span className="text-muted-foreground">Test Ad Banner</span>
-        </Card>
+      <div className="sticky bottom-0 inset-x-0 p-3 bg-background/80 backdrop-blur border-t border-border text-center">
+        <span className="text-muted-foreground text-sm">Test Ad Banner</span>
       </div>
     </div>
   );
