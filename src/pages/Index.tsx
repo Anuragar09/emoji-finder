@@ -12,8 +12,8 @@ const Index = () => {
     setShowSplash(false);
   };
 
-  const handleGameSelect = (mode: GameMode) => {
-    navigate(`/game/${mode}`);
+  const handleGameSelect = (mode: GameMode, level: number) => {
+    navigate(`/game/${mode}/${level}`);
   };
 
   if (showSplash) {

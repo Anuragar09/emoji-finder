@@ -4,8 +4,8 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { GameCard, GameMode, GameState, GameStats } from '@/types/game';
-import { generateGameData } from '@/utils/gameUtils';
-import { ArrowLeft, Heart, Timer, RotateCcw, Home } from 'lucide-react';
+import { generateGameData, playSound } from '@/utils/gameUtils';
+import { ArrowLeft, Heart, Timer, RotateCcw, Home, Lightbulb } from 'lucide-react';
 
 interface GameBoardProps {
   mode: GameMode;

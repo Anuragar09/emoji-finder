@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { GameMode } from '@/types/game';
+import { loadGameProgress } from '@/utils/gameUtils';
 
 interface GameTabsProps {
-  onGameSelect: (mode: GameMode) => void;
+  onGameSelect: (mode: GameMode, level: number) => void;
 }
 
 const GameTabs = ({ onGameSelect }: GameTabsProps) => {
   const [activeTab, setActiveTab] = useState<GameMode>('emoji');
+  const [lastLevel, setLastLevel] = useState<number>(1);
+
+  useEffect(() => {
+    const progress = loadGameProgress?.(activeTab);
+    setLastLevel(progress?.level ?? 1);
+  }, [activeTab]);
 
   const tabs = [
     {
@@ -42,16 +49,16 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
   ];
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-          Choose Your Quest
-        </h1>
-        <p className="text-muted-foreground">
-          Select a game mode to begin your neon adventure
-        </p>
-      </div>
+      <div className="min-h-screen bg-background p-4 flex flex-col">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+            Emoji Finder
+          </h1>
+          <p className="text-muted-foreground">
+            Choose a mode and level to start playing
+          </p>
+        </div>
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap justify-center gap-2 mb-8 max-w-4xl mx-auto">
@@ -92,9 +99,10 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
                 <h2 className="text-3xl font-bold text-foreground mb-2">
                   {tab.title}
                 </h2>
-                <p className="text-lg text-muted-foreground mb-6">
+                <p className="text-lg text-muted-foreground mb-2">
                   {tab.description}
                 </p>
+                <p className="text-sm text-muted-foreground">Last unlocked level: <span className="font-semibold text-primary">{lastLevel}</span></p>
               </div>
 
               {/* Level Selection */}
@@ -107,7 +115,7 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
                     {Array.from({ length: 100 }, (_, i) => i + 1).map((level) => (
                       <Button
                         key={level}
-                        onClick={() => onGameSelect(activeTab)}
+                        onClick={() => onGameSelect(activeTab, level)}
                         variant="outline"
                         className={`aspect-square text-sm font-semibold bg-gradient-to-r ${tab.color} border-2 border-transparent hover:border-primary neon-glow transition-all duration-300 opacity-80 hover:opacity-100`}
                         size="sm"
@@ -137,6 +145,12 @@ const GameTabs = ({ onGameSelect }: GameTabsProps) => {
             </div>
           </Card>
         ))}
+      </div>
+
+      <div className="mt-6">
+        <Card className="p-4 text-center bg-card/80 border-dashed border-primary">
+          <span className="text-muted-foreground">Test Ad Banner</span>
+        </Card>
       </div>
     </div>
   );
