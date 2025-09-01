@@ -5,7 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { GameCard, GameMode, GameState, GameStats } from '@/types/game';
 import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils';
-import { ArrowLeft, Heart, Timer, RotateCcw, Home, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Heart, Timer, RotateCcw, Home, Lightbulb, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface GameBoardProps {
@@ -29,6 +29,10 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
     mode
   });
   const [showHint, setShowHint] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [correctLevelsCount, setCorrectLevelsCount] = useState(0);
+  const [livesRefillTime, setLivesRefillTime] = useState<number | null>(null);
+  const [showRewardAd, setShowRewardAd] = useState(false);
 
   // Initialize game
   const initializeGame = useCallback(() => {
@@ -57,10 +61,26 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
     return () => clearInterval(timer);
   }, [gameState]);
 
-  // Initialize game on mount
+  // Lives refill timer effect
   useEffect(() => {
-    initializeGame();
-  }, [initializeGame]);
+    if (livesRefillTime && stats.lives < 3) {
+      const timer = setInterval(() => {
+        setLivesRefillTime(prev => {
+          if (prev && prev <= 1) {
+            setStats(prevStats => ({ ...prevStats, lives: 3 }));
+            toast({
+              title: "Lives Refilled! ❤️",
+              description: "Your lives have been restored!",
+              duration: 2000,
+            });
+            return null;
+          }
+          return prev ? prev - 1 : null;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [livesRefillTime, stats.lives, toast]);
 
   const handleCardClick = (card: GameCard) => {
     if (gameState !== 'playing' || card.isSelected) return;
@@ -96,6 +116,20 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
     // Success feedback
     if ('vibrate' in navigator) {
       navigator.vibrate([100, 50, 100]);
+    }
+
+    // Track correct levels for lives refill
+    const newCorrectCount = correctLevelsCount + 1;
+    setCorrectLevelsCount(newCorrectCount);
+
+    // Refill lives after 3 correct levels
+    if (newCorrectCount % 3 === 0 && stats.lives < 3) {
+      setStats(prev => ({ ...prev, lives: 3 }));
+      toast({
+        title: "Lives Bonus! ❤️❤️❤️",
+        description: "3 levels completed! Lives refilled!",
+        duration: 2000,
+      });
     }
 
     const congratsMessages = [
@@ -139,9 +173,11 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
       const newLives = prev.lives - 1;
       if (newLives <= 0) {
         setGameState('gameover');
+        // Start 2-minute lives refill timer
+        setLivesRefillTime(120);
         toast({
           title: "Game Over! 💀",
-          description: "No lives remaining",
+          description: "Lives will refill in 2 minutes",
           variant: "destructive",
           duration: 3000,
         });
@@ -155,8 +191,25 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
   };
 
   const handleHint = () => {
+    if (hintsUsed < 3) {
+      setShowHint(true);
+      setHintsUsed(prev => prev + 1);
+      setTimeout(() => setShowHint(false), 2000);
+    } else {
+      setShowRewardAd(true);
+    }
+  };
+
+  const handleRewardAd = () => {
+    setShowRewardAd(false);
+    setHintsUsed(0); // Reset hints after watching ad
     setShowHint(true);
     setTimeout(() => setShowHint(false), 2000);
+    toast({
+      title: "Hints Refilled! 💡",
+      description: "You can use 3 more hints!",
+      duration: 2000,
+    });
   };
 
   const getModeIcon = () => {
@@ -180,11 +233,11 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
   const timePercentage = (stats.timeLeft / 30) * 100;
 
   return (
-    <div className="min-h-screen bg-background p-2 sm:p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between p-3 border-b border-border">
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
           onClick={onExit}
           className="flex items-center gap-2"
@@ -193,18 +246,18 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
           Back
         </Button>
         
-        <div className="text-center">
-          <div className="flex items-center gap-2 text-lg font-semibold">
-            <span className="text-2xl">{getModeIcon()}</span>
-            <span className="capitalize">{mode} Finder</span>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            Level {stats.level} • Score: {stats.score}
-          </div>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="font-medium">Lv.{stats.level}</span>
+          <span className="text-muted-foreground">Score: {stats.score}</span>
+          {livesRefillTime && (
+            <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
+              Lives in {Math.floor(livesRefillTime / 60)}:{(livesRefillTime % 60).toString().padStart(2, '0')}
+            </span>
+          )}
         </div>
 
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
           onClick={onHome}
           className="flex items-center gap-2"
@@ -214,99 +267,114 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
         </Button>
       </div>
 
-      {/* Mode Switcher */}
-      <div className="max-w-2xl mx-auto mb-4">
-        <div className="flex items-center justify-center gap-2 overflow-x-auto no-scrollbar">
+      {/* Mode Switcher - More Prominent */}
+      <div className="bg-card/50 border-b border-border p-3">
+        <div className="flex items-center justify-center gap-2 max-w-md mx-auto">
           {(['emoji','number','alphabet','shape'] as GameMode[]).map((m) => (
             <Button
               key={m}
-              variant={m === mode ? 'default' : 'outline'}
+              variant={m === mode ? 'default' : 'ghost'}
               size="sm"
-              className={`transition-all duration-300 ${m === mode ? 'shadow-neon' : ''}`}
+              className={`flex-1 transition-all duration-300 hover:scale-105 ${
+                m === mode 
+                  ? `bg-gradient-to-r ${getModeColor().replace('from-neon-', 'from-').replace('to-neon-', 'to-')} text-white shadow-lg` 
+                  : 'hover:bg-accent/50'
+              }`}
               onClick={() => navigate(`/game/${m}/${stats.level}`)}
             >
-              <span className="mr-1">{m === 'emoji' ? '😀' : m === 'number' ? '🔢' : m === 'alphabet' ? '🔤' : '🔶'}</span>
-              <span className="capitalize hidden sm:inline">{m}</span>
+              <span className="text-lg mr-1">{m === 'emoji' ? '😀' : m === 'number' ? '🔢' : m === 'alphabet' ? '🔤' : '🔶'}</span>
+              <span className="capitalize text-xs">{m}</span>
             </Button>
           ))}
         </div>
       </div>
 
-      {/* Game Stats */}
-      <div className="max-w-md mx-auto mb-6 space-y-4">
-        {/* Lives */}
-        <div className="flex items-center justify-center gap-2">
-          {[...Array(3)].map((_, i) => (
-            <Heart 
-              key={i}
-              className={`w-6 h-6 ${
-                i < stats.lives 
-                  ? 'text-red-500 fill-red-500' 
-                  : 'text-muted-foreground'
-              }`}
+      {/* Game Content - Flex Grow */}
+      <div className="flex-1 flex flex-col p-3 pb-0">
+        {/* Game Stats */}
+        <div className="max-w-md mx-auto mb-4 space-y-3">
+          {/* Lives */}
+          <div className="flex items-center justify-center gap-2">
+            {[...Array(3)].map((_, i) => (
+              <Heart 
+                key={i}
+                className={`w-6 h-6 transition-all duration-300 ${
+                  i < stats.lives 
+                    ? 'text-red-500 fill-red-500 animate-pulse' 
+                    : 'text-muted-foreground/50'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Timer */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-center gap-2 text-lg font-semibold">
+              <Timer className="w-5 h-5" />
+              <span>{stats.timeLeft}s</span>
+            </div>
+            <Progress 
+              value={timePercentage} 
+              className={`h-2 ${timePercentage < 30 ? 'animate-pulse' : ''}`}
             />
-          ))}
-        </div>
-
-        {/* Timer */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-center gap-2 text-lg font-semibold">
-            <Timer className="w-5 h-5" />
-            <span>{stats.timeLeft}s</span>
           </div>
-          <Progress 
-            value={timePercentage} 
-            className={`h-2 ${timePercentage < 30 ? 'animate-pulse' : ''}`}
-          />
-        </div>
 
-        {/* Target Display */}
-        <Card className="p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border-primary">
+          {/* Target Display */}
+          <Card className="p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border-primary">
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground mb-2">Find this target:</div>
+              <div className={`text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : ''}`}>{target}</div>
+            </div>
+          </Card>
+
+          {/* Hint Button */}
           <div className="text-center">
-            <div className="text-sm text-muted-foreground mb-2">Find this target:</div>
-            <div className={`text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : ''}`}>{target}</div>
+            <Button
+              onClick={handleHint}
+              variant="outline"
+              size="sm"
+              disabled={hintsUsed >= 3 && !showRewardAd}
+              className="bg-gradient-to-r from-accent/20 to-accent/30 hover:from-accent/30 hover:to-accent/40"
+            >
+              <Lightbulb className="w-4 h-4 mr-2" />
+              {hintsUsed >= 3 ? 'Watch Ad for Hint' : `Hint (${3 - hintsUsed} left)`}
+            </Button>
           </div>
-        </Card>
+        </div>
 
-        {/* Hint Button */}
-        <div className="text-center">
-          <Button
-            onClick={handleHint}
-            variant="outline"
-            size="sm"
-            className="bg-gradient-to-r from-accent/20 to-accent/30 hover:from-accent/30 hover:to-accent/40"
-          >
-            <Lightbulb className="w-4 h-4 mr-2" />
-            Hint
-          </Button>
+        {/* Game Grid - Flex Grow */}
+        <div className="flex-1 flex items-center justify-center">
+          <div className={`grid gap-2 sm:gap-3 w-full max-w-md ${
+            mode === 'number' ? 'grid-cols-3' : 'grid-cols-4'
+          }`}>
+            {cards.map((card) => (
+              <Card
+                key={card.id}
+                className={`
+                  aspect-square flex items-center justify-center text-lg sm:text-2xl font-bold cursor-pointer
+                  transition-all duration-300 game-card min-h-[60px] sm:min-h-[80px]
+                  ${card.isSelected 
+                    ? card.state === 'correct' 
+                      ? 'bg-success border-success text-success-foreground shadow-neon'
+                      : 'bg-destructive border-destructive text-destructive-foreground animate-pulse'
+                    : 'hover:scale-105 hover:shadow-neon-sm'
+                  }
+                  ${gameState !== 'playing' ? 'pointer-events-none' : ''}
+                  ${card.isTarget && showHint ? 'ring-2 ring-primary shadow-neon animate-pulse' : ''}
+                `}
+                onClick={() => handleCardClick(card)}
+              >
+                {card.content}
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Game Grid */}
-      <div className="max-w-2xl mx-auto px-2">
-        <div className={`grid gap-2 sm:gap-3 ${
-          mode === 'number' ? 'grid-cols-3' : 'grid-cols-4'
-        }`}>
-          {cards.map((card) => (
-            <Card
-              key={card.id}
-              className={`
-                aspect-square flex items-center justify-center text-lg sm:text-2xl font-bold cursor-pointer
-                transition-all duration-300 game-card min-h-[60px] sm:min-h-[80px]
-                ${card.isSelected 
-                  ? card.state === 'correct' 
-                    ? 'bg-success border-success text-success-foreground shadow-neon'
-                    : 'bg-error border-error text-error-foreground'
-                  : 'hover:scale-105 hover:shadow-neon-sm'
-                }
-                ${gameState !== 'playing' ? 'pointer-events-none' : ''}
-                ${card.isTarget && showHint ? 'ring-2 ring-primary shadow-neon animate-pulse' : ''}
-              `}
-              onClick={() => handleCardClick(card)}
-            >
-              {card.content}
-            </Card>
-          ))}
+      {/* Sticky Ad Banner - No Extra Space */}
+      <div className="bg-card border-t border-border p-3 text-center">
+        <div className="text-xs text-muted-foreground bg-muted/30 rounded py-2">
+          Test Ad Banner - Sponsored Content
         </div>
       </div>
 
@@ -344,6 +412,39 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
                 className="flex-1"
               >
                 Exit
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Reward Ad Modal */}
+      {showRewardAd && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <Card className="p-8 max-w-sm mx-4 text-center space-y-6 animate-scale-in border-primary shadow-neon-lg">
+            <div className="text-6xl mb-4">🎁</div>
+            
+            <div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Watch Ad for Hints!</h2>
+              <p className="text-muted-foreground">
+                Watch a short ad to get 3 more hints
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleRewardAd}
+                className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white"
+              >
+                <Gift className="w-4 h-4 mr-2" />
+                Watch Ad
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowRewardAd(false)}
+                className="flex-1"
+              >
+                Cancel
               </Button>
             </div>
           </Card>
