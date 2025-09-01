@@ -9,22 +9,24 @@ import { ArrowLeft, Heart, Timer, RotateCcw, Home, Lightbulb } from 'lucide-reac
 
 interface GameBoardProps {
   mode: GameMode;
+  initialLevel?: number;
   onExit: () => void;
   onHome: () => void;
 }
 
-const GameBoard = ({ mode, onExit, onHome }: GameBoardProps) => {
+const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) => {
   const { toast } = useToast();
   const [gameState, setGameState] = useState<GameState>('playing');
   const [cards, setCards] = useState<GameCard[]>([]);
   const [target, setTarget] = useState<string>('');
   const [stats, setStats] = useState<GameStats>({
-    level: 1,
+    level: initialLevel,
     lives: 3,
     timeLeft: 30,
     score: 0,
     mode
   });
+  const [showHint, setShowHint] = useState(false);
 
   // Initialize game
   const initializeGame = useCallback(() => {
@@ -61,6 +63,9 @@ const GameBoard = ({ mode, onExit, onHome }: GameBoardProps) => {
   const handleCardClick = (card: GameCard) => {
     if (gameState !== 'playing' || card.isSelected) return;
 
+    // Play tap sound
+    playSound('tap');
+
     // Add vibration feedback
     if ('vibrate' in navigator) {
       navigator.vibrate(50);
@@ -82,6 +87,9 @@ const GameBoard = ({ mode, onExit, onHome }: GameBoardProps) => {
 
   const handleCorrectAnswer = () => {
     setGameState('correct');
+    
+    // Play correct sound
+    playSound('correct');
     
     // Success feedback
     if ('vibrate' in navigator) {
@@ -115,27 +123,37 @@ const GameBoard = ({ mode, onExit, onHome }: GameBoardProps) => {
   const handleWrongAnswer = () => {
     setGameState('wrong');
     
+    // Play wrong sound
+    playSound('wrong');
+    
     // Error vibration
     if ('vibrate' in navigator) {
       navigator.vibrate([200, 100, 200]);
     }
 
-    const newLives = stats.lives - 1;
-    setStats(prev => ({ ...prev, lives: newLives }));
-
-    if (newLives <= 0) {
-      setGameState('gameover');
-      toast({
-        title: "Game Over! 💀",
-        description: "No lives remaining",
-        variant: "destructive",
-        duration: 3000,
-      });
-    }
+    setStats(prev => {
+      const newLives = prev.lives - 1;
+      if (newLives <= 0) {
+        setGameState('gameover');
+        toast({
+          title: "Game Over! 💀",
+          description: "No lives remaining",
+          variant: "destructive",
+          duration: 3000,
+        });
+      }
+      return { ...prev, lives: newLives };
+    });
   };
 
   const handleRetry = () => {
+    setStats(prev => ({ ...prev, lives: 3 }));
     initializeGame();
+  };
+
+  const handleHint = () => {
+    setShowHint(true);
+    setTimeout(() => setShowHint(false), 2000);
   };
 
   const getModeIcon = () => {
@@ -159,9 +177,9 @@ const GameBoard = ({ mode, onExit, onHome }: GameBoardProps) => {
   const timePercentage = (stats.timeLeft / 30) * 100;
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-2 sm:p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <Button 
           variant="outline" 
           size="sm" 
@@ -225,22 +243,35 @@ const GameBoard = ({ mode, onExit, onHome }: GameBoardProps) => {
         <Card className="p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border-primary">
           <div className="text-center">
             <div className="text-sm text-muted-foreground mb-2">Find this target:</div>
-            <div className="text-4xl font-bold">{target}</div>
+            <div className={`text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : ''}`}>{target}</div>
           </div>
         </Card>
+
+        {/* Hint Button */}
+        <div className="text-center">
+          <Button
+            onClick={handleHint}
+            variant="outline"
+            size="sm"
+            className="bg-gradient-to-r from-accent/20 to-accent/30 hover:from-accent/30 hover:to-accent/40"
+          >
+            <Lightbulb className="w-4 h-4 mr-2" />
+            Hint
+          </Button>
+        </div>
       </div>
 
       {/* Game Grid */}
-      <div className="max-w-2xl mx-auto">
-        <div className={`grid gap-3 ${
+      <div className="max-w-2xl mx-auto px-2">
+        <div className={`grid gap-2 sm:gap-3 ${
           mode === 'number' ? 'grid-cols-3' : 'grid-cols-4'
         }`}>
           {cards.map((card) => (
             <Card
               key={card.id}
               className={`
-                aspect-square flex items-center justify-center text-2xl font-bold cursor-pointer
-                transition-all duration-300 game-card
+                aspect-square flex items-center justify-center text-lg sm:text-2xl font-bold cursor-pointer
+                transition-all duration-300 game-card min-h-[60px] sm:min-h-[80px]
                 ${card.isSelected 
                   ? card.state === 'correct' 
                     ? 'bg-success border-success text-success-foreground shadow-neon'
@@ -248,6 +279,7 @@ const GameBoard = ({ mode, onExit, onHome }: GameBoardProps) => {
                   : 'hover:scale-105 hover:shadow-neon-sm'
                 }
                 ${gameState !== 'playing' ? 'pointer-events-none' : ''}
+                ${card.isTarget && showHint ? 'ring-2 ring-primary shadow-neon animate-pulse' : ''}
               `}
               onClick={() => handleCardClick(card)}
             >
