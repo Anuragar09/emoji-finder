@@ -43,7 +43,12 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
     setGameState('playing');
   }, [mode, stats.level]);
 
-  // Timer effect
+  // Initialize on mount and when mode/level changes
+  useEffect(() => {
+    initializeGame();
+  }, [initializeGame]);
+
+   // Timer effect
   useEffect(() => {
     if (gameState !== 'playing') return;
 
@@ -323,7 +328,7 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
           <Card className="p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border-primary">
             <div className="text-center">
               <div className="text-sm text-muted-foreground mb-2">Find this target:</div>
-              <div className={`text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : ''}`}>{target}</div>
+              <div className={`text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : 'text-foreground'}`}>{target}</div>
             </div>
           </Card>
 
@@ -351,7 +356,7 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
               <Card
                 key={card.id}
                 className={`
-                  aspect-square flex items-center justify-center text-lg sm:text-2xl font-bold cursor-pointer
+                  aspect-square flex items-center justify-center text-lg sm:text-2xl font-bold text-foreground cursor-pointer
                   transition-all duration-300 game-card min-h-[60px] sm:min-h-[80px]
                   ${card.isSelected 
                     ? card.state === 'correct' 
@@ -372,8 +377,8 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
       </div>
 
       {/* Sticky Ad Banner - No Extra Space */}
-      <div className="bg-card border-t border-border p-3 text-center">
-        <div className="text-xs text-muted-foreground bg-muted/30 rounded py-2">
+      <div className="bg-card border-t border-border p-2 text-center">
+        <div className="text-xs text-muted-foreground bg-muted/30 rounded-md py-1">
           Test Ad Banner - Sponsored Content
         </div>
       </div>
