@@ -1,49 +1,69 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
-import { GameCard, GameMode, GameState, GameStats } from '@/types/game';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { GameCard, GameState, GameMode, GameStats } from '@/types/game';
 import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils';
-import { ArrowLeft, Heart, Timer, RotateCcw, Home, Lightbulb, Gift } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Gift } from 'lucide-react';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface GameBoardProps {
   mode: GameMode;
-  initialLevel?: number;
+  initialLevel: number;
   onExit: () => void;
   onHome: () => void;
 }
 
-const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) => {
-  const { toast } = useToast();
-  const navigate = useNavigate();
-  const [gameState, setGameState] = useState<GameState>('playing');
+const gameModes = [
+  { id: 'emoji' as GameMode, icon: '😀', title: 'Emoji' },
+  { id: 'number' as GameMode, icon: '🔢', title: 'Number' },
+  { id: 'alphabet' as GameMode, icon: '🔤', title: 'Alphabet' },
+  { id: 'shape' as GameMode, icon: '🔶', title: 'Shape' },
+];
+
+const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHome }) => {
   const [cards, setCards] = useState<GameCard[]>([]);
   const [target, setTarget] = useState<string>('');
+  const [gameState, setGameState] = useState<GameState>('playing');
+  const [showHint, setShowHint] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [showRewardAd, setShowRewardAd] = useState(false);
+  const [currentMode, setCurrentMode] = useState(mode);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const [stats, setStats] = useState<GameStats>({
     level: initialLevel,
     lives: 3,
     timeLeft: 30,
     score: 0,
-    mode
+    mode: mode,
   });
-  const [showHint, setShowHint] = useState(false);
-  const [hintsUsed, setHintsUsed] = useState(0);
-  const [correctLevelsCount, setCorrectLevelsCount] = useState(0);
-  const [livesRefillTime, setLivesRefillTime] = useState<number | null>(null);
-  const [showRewardAd, setShowRewardAd] = useState(false);
+  const [livesRefillTimer, setLivesRefillTimer] = useState<number | null>(null);
+  const [correctLevels, setCorrectLevels] = useState(0);
+  const { toast } = useToast();
 
   // Initialize game
   const initializeGame = useCallback(() => {
-    const gameData = generateGameData(mode, stats.level);
+    const gameData = generateGameData(currentMode, stats.level);
     setCards(gameData.cards);
     setTarget(gameData.target);
     setStats(prev => ({ ...prev, timeLeft: 30 }));
     setGameState('playing');
-  }, [mode, stats.level]);
+  }, [currentMode, stats.level]);
 
   // Initialize on mount and when mode/level changes
+  useEffect(() => {
+    if (mode !== currentMode) {
+      setCurrentMode(mode);
+      setStats(prev => ({ ...prev, mode, level: initialLevel }));
+    }
+  }, [mode, initialLevel, currentMode]);
+
   useEffect(() => {
     initializeGame();
   }, [initializeGame]);
@@ -56,7 +76,7 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
       setStats(prev => {
         if (prev.timeLeft <= 1) {
           setGameState('timeout');
-          handleWrongAnswer();
+          handleTimeout();
           return { ...prev, timeLeft: 0 };
         }
         return { ...prev, timeLeft: prev.timeLeft - 1 };
@@ -68,10 +88,10 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
 
   // Lives refill timer effect
   useEffect(() => {
-    if (livesRefillTime && stats.lives < 3) {
+    if (livesRefillTimer !== null && livesRefillTimer > 0) {
       const timer = setInterval(() => {
-        setLivesRefillTime(prev => {
-          if (prev && prev <= 1) {
+        setLivesRefillTimer(prev => {
+          if (prev !== null && prev <= 1) {
             setStats(prevStats => ({ ...prevStats, lives: 3 }));
             toast({
               title: "Lives Refilled! ❤️",
@@ -80,24 +100,38 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
             });
             return null;
           }
-          return prev ? prev - 1 : null;
+          return prev !== null ? prev - 1 : null;
         });
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [livesRefillTime, stats.lives, toast]);
+  }, [livesRefillTimer, toast]);
+
+  const handleTimeout = () => {
+    if (soundEnabled) playSound('wrong');
+    
+    const newLives = stats.lives - 1;
+    setStats(prev => ({ ...prev, lives: newLives }));
+    
+    if (newLives <= 0) {
+      setGameState('gameover');
+      setLivesRefillTimer(120);
+      
+      setTimeout(() => {
+        onHome();
+      }, 3000);
+    } else {
+      setTimeout(() => {
+        initializeGame();
+      }, 1500);
+    }
+  };
 
   const handleCardClick = (card: GameCard) => {
     if (gameState !== 'playing' || card.isSelected) return;
-
-    // Play tap sound
-    playSound('tap');
-
-    // Add vibration feedback
-    if ('vibrate' in navigator) {
-      navigator.vibrate(50);
-    }
-
+    
+    if (soundEnabled) playSound('tap');
+    
     const updatedCards = cards.map(c => 
       c.id === card.id 
         ? { ...c, isSelected: true, state: (card.isTarget ? 'correct' : 'wrong') as 'correct' | 'wrong' }
@@ -106,349 +140,276 @@ const GameBoard = ({ mode, initialLevel = 1, onExit, onHome }: GameBoardProps) =
     setCards(updatedCards);
 
     if (card.isTarget) {
-      handleCorrectAnswer();
-    } else {
-      handleWrongAnswer();
-    }
-  };
-
-  const handleCorrectAnswer = () => {
-    setGameState('correct');
-    
-    // Play correct sound
-    playSound('correct');
-    
-    // Success feedback
-    if ('vibrate' in navigator) {
-      navigator.vibrate([100, 50, 100]);
-    }
-
-    // Track correct levels for lives refill
-    const newCorrectCount = correctLevelsCount + 1;
-    setCorrectLevelsCount(newCorrectCount);
-
-    // Refill lives after 3 correct levels
-    if (newCorrectCount % 3 === 0 && stats.lives < 3) {
-      setStats(prev => ({ ...prev, lives: 3 }));
-      toast({
-        title: "Lives Bonus! ❤️❤️❤️",
-        description: "3 levels completed! Lives refilled!",
-        duration: 2000,
-      });
-    }
-
-    const congratsMessages = [
-      "Well done! 🎉", 
-      "Congratulations! ⭐", 
-      "Perfect! 🌟", 
-      "Amazing! 🚀",
-      "Excellent! 💫"
-    ];
-    
-    toast({
-      title: congratsMessages[Math.floor(Math.random() * congratsMessages.length)],
-      description: "Moving to next level!",
-      duration: 2000,
-    });
-
-    setTimeout(() => {
-      setStats(prev => {
-        const newLevel = prev.level + 1;
-        const newScore = prev.score + (prev.timeLeft * 10);
-        // Save progress: unlock next level
-        saveGameProgress(newLevel, mode, newScore);
-        return { ...prev, level: newLevel, score: newScore };
-      });
-      initializeGame();
-    }, 1500);
-  };
-
-  const handleWrongAnswer = () => {
-    setGameState('wrong');
-    
-    // Play wrong sound
-    playSound('wrong');
-    
-    // Error vibration
-    if ('vibrate' in navigator) {
-      navigator.vibrate([200, 100, 200]);
-    }
-
-    setStats(prev => {
-      const newLives = prev.lives - 1;
-      if (newLives <= 0) {
-        setGameState('gameover');
-        // Start 2-minute lives refill timer
-        setLivesRefillTime(120);
+      setGameState('correct');
+      if (soundEnabled) playSound('correct');
+      
+      // Award points and advance level
+      const points = Math.max(10, stats.timeLeft * 2);
+      const newScore = stats.score + points;
+      const newLevel = stats.level + 1;
+      const newCorrectLevels = correctLevels + 1;
+      
+      setStats(prev => ({ ...prev, score: newScore, level: newLevel }));
+      setCorrectLevels(newCorrectLevels);
+      
+      // Refill lives after 3 correct levels
+      if (newCorrectLevels % 3 === 0) {
+        setStats(prev => ({ ...prev, lives: 3 }));
+        setLivesRefillTimer(null);
         toast({
-          title: "Game Over! 💀",
-          description: "Lives will refill in 2 minutes",
-          variant: "destructive",
-          duration: 3000,
+          title: "Lives Refilled! 💖",
+          description: "You completed 3 levels correctly!",
+          duration: 2000,
         });
       }
-      return { ...prev, lives: newLives };
-    });
-  };
-
-  const handleRetry = () => {
-    initializeGame();
+      
+      saveGameProgress(newLevel, mode, newScore);
+      
+      setTimeout(() => {
+        initializeGame();
+      }, 1500);
+    } else {
+      setGameState('wrong');
+      if (soundEnabled) playSound('wrong');
+      
+      const newLives = stats.lives - 1;
+      setStats(prev => ({ ...prev, lives: newLives }));
+      
+      if (newLives <= 0) {
+        setGameState('gameover');
+        // Start 2-minute refill timer
+        setLivesRefillTimer(120);
+        
+        setTimeout(() => {
+          onHome();
+        }, 3000);
+      } else {
+        setTimeout(() => {
+          initializeGame();
+        }, 1500);
+      }
+    }
   };
 
   const handleHint = () => {
-    if (hintsUsed < 3) {
-      setShowHint(true);
-      setHintsUsed(prev => prev + 1);
-      setTimeout(() => setShowHint(false), 2000);
-    } else {
+    if (hintsUsed >= 3) {
       setShowRewardAd(true);
+      return;
+    }
+    
+    setShowHint(true);
+    setHintsUsed(prev => prev + 1);
+    
+    setTimeout(() => {
+      setShowHint(false);
+    }, 3000);
+  };
+
+  const handleRewardAdComplete = () => {
+    setShowRewardAd(false);
+    setShowHint(true);
+    
+    setTimeout(() => {
+      setShowHint(false);
+    }, 3000);
+  };
+
+  const handleModeChange = (newMode: GameMode) => {
+    if (newMode !== currentMode) {
+      setCurrentMode(newMode);
+      setStats(prev => ({ ...prev, mode: newMode, level: 1 }));
     }
   };
 
-  const handleRewardAd = () => {
-    setShowRewardAd(false);
-    setHintsUsed(0); // Reset hints after watching ad
-    setShowHint(true);
-    setTimeout(() => setShowHint(false), 2000);
+  const showHowToPlay = () => {
     toast({
-      title: "Hints Refilled! 💡",
-      description: "You can use 3 more hints!",
-      duration: 2000,
+      title: "How to Play",
+      description: "Find and tap the target item shown at the top. You have 30 seconds and 3 lives. Complete 3 levels to refill lives!",
+      duration: 5000,
     });
   };
 
-  const getModeIcon = () => {
-    switch (mode) {
-      case 'emoji': return '😀';
-      case 'number': return '🔢';
-      case 'alphabet': return '🔤';
-      case 'shape': return '🔶';
-    }
+  const showTestAd = () => {
+    toast({
+      title: "Test Ad",
+      description: "This would show a test advertisement.",
+      duration: 3000,
+    });
   };
-
-  const getModeColor = () => {
-    switch (mode) {
-      case 'emoji': return 'from-neon-pink to-neon-purple';
-      case 'number': return 'from-neon-blue to-neon-green';
-      case 'alphabet': return 'from-neon-yellow to-neon-orange';
-      case 'shape': return 'from-neon-green to-neon-blue';
-    }
-  };
-
-  const timePercentage = (stats.timeLeft / 30) * 100;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onExit}
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </Button>
-        
-        <div className="flex items-center gap-3 text-sm">
-          <span className="font-medium">Lv.{stats.level}</span>
-          <span className="text-muted-foreground">Score: {stats.score}</span>
-          {livesRefillTime && (
-            <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">
-              Lives in {Math.floor(livesRefillTime / 60)}:{(livesRefillTime % 60).toString().padStart(2, '0')}
-            </span>
-          )}
+      {/* Header with Game Modes and Settings */}
+      <div className="bg-card border-b border-border px-3 py-2 sticky top-0 z-10">
+        <div className="flex items-center justify-between">
+          {/* Game Mode Tabs */}
+          <div className="flex space-x-1 overflow-x-auto scrollbar-hide flex-1">
+            {gameModes.map((gameMode) => (
+              <Button
+                key={gameMode.id}
+                variant={currentMode === gameMode.id ? "default" : "ghost"}
+                size="sm"
+                className={`flex items-center space-x-1.5 min-w-max transition-all duration-300 px-2 py-1.5 h-8 ${
+                  currentMode === gameMode.id 
+                    ? 'bg-primary text-primary-foreground shadow-md scale-105' 
+                    : 'hover:bg-muted hover:scale-102 text-muted-foreground'
+                }`}
+                onClick={() => handleModeChange(gameMode.id)}
+              >
+                <span className="text-sm">{gameMode.icon}</span>
+                <span className="text-xs font-medium hidden sm:inline">{gameMode.title}</span>
+              </Button>
+            ))}
+          </div>
+          
+          {/* Settings Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="ml-2 p-1.5 h-8 w-8">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setSoundEnabled(!soundEnabled)}>
+                {soundEnabled ? <Volume2 className="mr-2 h-4 w-4" /> : <VolumeX className="mr-2 h-4 w-4" />}
+                {soundEnabled ? 'Turn Off Sound' : 'Turn On Sound'}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={showHowToPlay}>
+                <HelpCircle className="mr-2 h-4 w-4" />
+                How to Play
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={showTestAd}>
+                <Gift className="mr-2 h-4 w-4" />
+                Show Test Ad
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onHome}>
+                <Home className="mr-2 h-4 w-4" />
+                Exit Game
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={onHome}
-          className="flex items-center gap-2"
-        >
-          <Home className="w-4 h-4" />
-          Home
-        </Button>
       </div>
 
-      {/* Mode Switcher - More Prominent */}
-      <div className="bg-card/50 border-b border-border p-3">
-        <div className="flex items-center justify-center gap-2 max-w-md mx-auto">
-          {(['emoji','number','alphabet','shape'] as GameMode[]).map((m) => (
-            <Button
-              key={m}
-              variant={m === mode ? 'default' : 'ghost'}
-              size="sm"
-              className={`flex-1 transition-all duration-300 hover:scale-105 ${
-                m === mode 
-                  ? `bg-gradient-to-r ${getModeColor().replace('from-neon-', 'from-').replace('to-neon-', 'to-')} text-white shadow-lg` 
-                  : 'hover:bg-accent/50'
-              }`}
-              onClick={() => navigate(`/game/${m}/${stats.level}`)}
+      {/* Main Content */}
+      <div className="flex-1 p-3 space-y-4 pb-0 overflow-y-auto">
+        {/* Lives Refill Timer */}
+        {livesRefillTimer !== null && livesRefillTimer > 0 && (
+          <Card className="p-3 bg-gradient-to-r from-red-500/20 to-pink-500/20 border-red-300 animate-fade-in">
+            <div className="text-center">
+              <div className="text-base font-bold text-red-600 mb-1">Lives Refilling...</div>
+              <div className="text-sm text-muted-foreground">
+                Next life in: {Math.floor(livesRefillTimer / 60)}:{(livesRefillTimer % 60).toString().padStart(2, '0')}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Stats Bar */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <Card className="p-2 sm:p-3 text-center bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-300 transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2 mb-1">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+              <span className="text-base sm:text-lg font-bold text-blue-600">{stats.timeLeft}s</span>
+            </div>
+            <div className="text-xs text-muted-foreground">Time</div>
+          </Card>
+          
+          <Card className="p-2 sm:p-3 text-center bg-gradient-to-br from-red-500/20 to-red-600/20 border-red-300 transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2 mb-1">
+              <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
+              <span className="text-base sm:text-lg font-bold text-red-600">{stats.lives}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">Lives</div>
+          </Card>
+          
+          <Card className="p-2 sm:p-3 text-center bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-300 transition-all duration-300 hover:scale-105">
+            <div className="flex items-center justify-center space-x-1 sm:space-x-2 mb-1">
+              <Target className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+              <span className="text-base sm:text-lg font-bold text-green-600">L{stats.level}</span>
+            </div>
+            <div className="text-xs text-muted-foreground">Level</div>
+          </Card>
+        </div>
+
+        {/* Target Display */}
+        <div className="space-y-3">
+          <Card className="p-3 sm:p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border-primary animate-fade-in">
+            <div className="text-center">
+              <div className="text-xs sm:text-sm text-muted-foreground mb-2">Find this target:</div>
+              <div className={`text-3xl sm:text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : 'text-foreground'}`}>{target}</div>
+            </div>
+          </Card>
+
+          {/* Hint and Reset Buttons */}
+          <div className="flex space-x-2 justify-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleHint}
+              className="space-x-1.5 text-xs hover-scale"
             >
-              <span className="text-lg mr-1">{m === 'emoji' ? '😀' : m === 'number' ? '🔢' : m === 'alphabet' ? '🔤' : '🔶'}</span>
-              <span className="capitalize text-xs">{m}</span>
+              <Zap className="h-3 w-3" />
+              <span className="hidden sm:inline">Hint {hintsUsed >= 3 ? '(Watch Ad)' : `(${3 - hintsUsed} left)`}</span>
+              <span className="sm:hidden">Hint</span>
             </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={initializeGame}
+              className="space-x-1.5 text-xs hover-scale"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span className="hidden sm:inline">Reset</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Game Grid */}
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-sm sm:max-w-md mx-auto mb-4">
+          {cards.map((card) => (
+            <Card
+              key={card.id}
+              className={`
+                aspect-square flex items-center justify-center text-base sm:text-lg md:text-xl font-bold text-foreground cursor-pointer
+                transition-all duration-300 game-card min-h-[50px] sm:min-h-[60px] md:min-h-[70px]
+                ${card.isSelected 
+                  ? card.state === 'correct' 
+                    ? 'bg-green-500 text-white scale-110 shadow-lg shadow-green-500/50 animate-scale-in' 
+                    : 'bg-red-500 text-white scale-95 shadow-lg shadow-red-500/50 animate-fade-out'
+                  : 'bg-card hover:bg-muted hover:scale-105 border border-border hover:border-primary/50 hover-scale'
+                }
+              `}
+              onClick={() => handleCardClick(card)}
+            >
+              {card.content}
+            </Card>
           ))}
         </div>
       </div>
 
-      {/* Game Content - Flex Grow */}
-      <div className="flex-1 flex flex-col p-3 pb-0">
-        {/* Game Stats */}
-        <div className="max-w-md mx-auto mb-4 space-y-3">
-          {/* Lives */}
-          <div className="flex items-center justify-center gap-2">
-            {[...Array(3)].map((_, i) => (
-              <Heart 
-                key={i}
-                className={`w-6 h-6 transition-all duration-300 ${
-                  i < stats.lives 
-                    ? 'text-red-500 fill-red-500 animate-pulse' 
-                    : 'text-muted-foreground/50'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Timer */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-center gap-2 text-lg font-semibold">
-              <Timer className="w-5 h-5" />
-              <span>{stats.timeLeft}s</span>
-            </div>
-            <Progress 
-              value={timePercentage} 
-              className={`h-2 ${timePercentage < 30 ? 'animate-pulse' : ''}`}
-            />
-          </div>
-
-          {/* Target Display */}
-          <Card className="p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border-primary">
-            <div className="text-center">
-              <div className="text-sm text-muted-foreground mb-2">Find this target:</div>
-              <div className={`text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : 'text-foreground'}`}>{target}</div>
-            </div>
-          </Card>
-
-          {/* Hint Button */}
-          <div className="text-center">
-            <Button
-              onClick={handleHint}
-              variant="outline"
-              size="sm"
-              disabled={hintsUsed >= 3 && !showRewardAd}
-              className="bg-gradient-to-r from-accent/20 to-accent/30 hover:from-accent/30 hover:to-accent/40"
-            >
-              <Lightbulb className="w-4 h-4 mr-2" />
-              {hintsUsed >= 3 ? 'Watch Ad for Hint' : `Hint (${3 - hintsUsed} left)`}
-            </Button>
-          </div>
-        </div>
-
-        {/* Game Grid - Flex Grow */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className={`grid gap-2 sm:gap-3 w-full max-w-md ${
-            mode === 'number' ? 'grid-cols-3' : 'grid-cols-4'
-          }`}>
-            {cards.map((card) => (
-              <Card
-                key={card.id}
-                className={`
-                  aspect-square flex items-center justify-center text-lg sm:text-2xl font-bold text-foreground cursor-pointer
-                  transition-all duration-300 game-card min-h-[60px] sm:min-h-[80px]
-                  ${card.isSelected 
-                    ? card.state === 'correct' 
-                      ? 'bg-success border-success text-success-foreground shadow-neon'
-                      : 'bg-destructive border-destructive text-destructive-foreground animate-pulse'
-                    : 'hover:scale-105 hover:shadow-neon-sm'
-                  }
-                  ${gameState !== 'playing' ? 'pointer-events-none' : ''}
-                  ${card.isTarget && showHint ? 'ring-2 ring-primary shadow-neon animate-pulse' : ''}
-                `}
-                onClick={() => handleCardClick(card)}
-              >
-                {card.content}
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Sticky Ad Banner - No Extra Space */}
+      {/* Sticky Ad Banner */}
       <div className="bg-card border-t border-border p-2 text-center">
-        <div className="text-xs text-muted-foreground bg-muted/30 rounded-md py-1">
-          Test Ad Banner - Sponsored Content
+        <div className="text-xs text-muted-foreground bg-muted/20 rounded px-2 py-1">
+          Test Ad Banner
         </div>
       </div>
-
-      {/* Game Over Modal */}
-      {(gameState === 'wrong' || gameState === 'gameover') && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <Card className="p-8 max-w-sm mx-4 text-center space-y-6 animate-scale-in border-error shadow-neon-lg">
-            <div className="text-6xl mb-4">
-              {gameState === 'gameover' ? '💀' : '❌'}
-            </div>
-            
-            <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                {gameState === 'gameover' ? 'Game Over!' : 'Wrong Answer!'}
-              </h2>
-              <p className="text-muted-foreground">
-                {gameState === 'gameover' 
-                  ? 'No lives remaining. Try again?' 
-                  : `Lives remaining: ${stats.lives}`
-                }
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <Button 
-                onClick={handleRetry}
-                className={`flex-1 bg-gradient-to-r ${getModeColor()}`}
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Retry
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={onExit}
-                className="flex-1"
-              >
-                Exit
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
 
       {/* Reward Ad Modal */}
       {showRewardAd && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <Card className="p-8 max-w-sm mx-4 text-center space-y-6 animate-scale-in border-primary shadow-neon-lg">
-            <div className="text-6xl mb-4">🎁</div>
-            
+          <Card className="p-6 max-w-sm mx-4 text-center space-y-4 animate-scale-in">
+            <div className="text-4xl">🎁</div>
             <div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">Watch Ad for Hints!</h2>
-              <p className="text-muted-foreground">
-                Watch a short ad to get 3 more hints
-              </p>
+              <h3 className="text-lg font-bold mb-2">Watch Ad for Hints</h3>
+              <p className="text-sm text-muted-foreground">Watch a reward ad to get more hints</p>
             </div>
-
-            <div className="flex gap-3">
-              <Button 
-                onClick={handleRewardAd}
-                className="flex-1 bg-gradient-to-r from-green-500 to-blue-500 text-white"
-              >
-                <Gift className="w-4 h-4 mr-2" />
+            <div className="flex gap-2">
+              <Button onClick={handleRewardAdComplete} className="flex-1" size="sm">
                 Watch Ad
               </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowRewardAd(false)}
-                className="flex-1"
-              >
+              <Button variant="outline" onClick={() => setShowRewardAd(false)} className="flex-1" size="sm">
                 Cancel
               </Button>
             </div>

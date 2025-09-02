@@ -15,7 +15,11 @@ export const generateGameData = (mode: GameMode, level: number) => {
       ];
       break;
     case 'number':
-      allItems = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
+      // Generate numbers from 10-99 for better variety
+      allItems = [];
+      for (let i = 10; i <= 99; i++) {
+        allItems.push(i.toString());
+      }
       cardCount = 16;
       break;
     case 'alphabet':
