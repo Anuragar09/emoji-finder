@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import logoImage from '@/assets/emoji-quest-logo.png';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -42,19 +43,21 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         ))}
       </div>
 
-      {/* Logo placeholder with glow */}
+      {/* Logo with AI-generated image */}
       <div className="mb-8 animate-glow-pulse">
-        <div className="w-32 h-32 bg-gradient-primary rounded-full flex items-center justify-center text-6xl font-bold shadow-neon">
-          🎯
-        </div>
+        <img 
+          src={logoImage} 
+          alt="Emoji Quest" 
+          className="w-32 h-32 rounded-full shadow-neon animate-bounce-gentle"
+        />
       </div>
 
       {/* App name */}
       <h1 className="text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4 animate-fade-in">
-        NEON FINDER
+        EMOJI QUEST
       </h1>
       <p className="text-xl text-muted-foreground mb-12 animate-fade-in text-center max-w-md">
-        Find hidden items in this neon-powered puzzle adventure!
+        Ultimate emoji finding challenge with 4 game modes!
       </p>
 
       {/* Loading section */}
@@ -89,7 +92,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
       {/* Version info */}
       <div className="absolute bottom-4 text-xs text-muted-foreground">
-        v1.0.0 | Neon Finder Quest
+        v1.0.0 | EMOJI QUEST
       </div>
     </div>
   );

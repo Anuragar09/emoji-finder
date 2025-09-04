@@ -14,7 +14,7 @@ const Game = () => {
   const validLevel = Number.isFinite(levelNum) && levelNum >= 1 && levelNum <= 100;
 
   useEffect(() => {
-    document.title = validMode ? `Play ${gameMode} • Emoji Finder` : 'Emoji Finder';
+    document.title = validMode ? `Play ${gameMode} • EMOJI QUEST` : 'EMOJI QUEST';
   }, [validMode, gameMode]);
 
   if (!validMode || !validLevel) {

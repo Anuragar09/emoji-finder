@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { GameCard, GameState, GameMode, GameStats } from '@/types/game';
 import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils';
 import { useToast } from '@/hooks/use-toast';
-import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Gift } from 'lucide-react';
+import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Gift, Crown, Star, Trophy } from 'lucide-react';
+import logoImage from '@/assets/emoji-quest-logo.png';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -238,52 +239,78 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header with Game Modes and Settings */}
-      <div className="bg-card border-b border-border px-3 py-2 sticky top-0 z-10">
+    <div className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-gradient-to-br from-background via-background/95 to-primary/5 pointer-events-none"></div>
+      
+      {/* Modern Header with Branding */}
+      <div className="relative bg-card/80 backdrop-blur-lg border-b border-primary/20 px-3 py-2 sticky top-0 z-10">
         <div className="flex items-center justify-between">
-          {/* Game Mode Tabs */}
-          <div className="flex space-x-1 overflow-x-auto scrollbar-hide flex-1">
-            {gameModes.map((gameMode) => (
-              <Button
-                key={gameMode.id}
-                variant={currentMode === gameMode.id ? "default" : "ghost"}
-                size="sm"
-                className={`flex items-center space-x-1.5 min-w-max transition-all duration-300 px-2 py-1.5 h-8 ${
-                  currentMode === gameMode.id 
-                    ? 'bg-primary text-primary-foreground shadow-md scale-105' 
-                    : 'hover:bg-muted hover:scale-102 text-muted-foreground'
-                }`}
-                onClick={() => handleModeChange(gameMode.id)}
-              >
-                <span className="text-sm">{gameMode.icon}</span>
-                <span className="text-xs font-medium hidden sm:inline">{gameMode.title}</span>
-              </Button>
-            ))}
+          {/* Logo and Game Modes */}
+          <div className="flex items-center space-x-3 flex-1">
+            <img 
+              src={logoImage} 
+              alt="Emoji Quest" 
+              className="w-8 h-8 rounded-lg animate-pulse cursor-pointer" 
+              onClick={onHome}
+            />
+            <div className="flex space-x-1 overflow-x-auto scrollbar-hide">
+              {gameModes.map((gameMode) => (
+                <Button
+                  key={gameMode.id}
+                  variant="ghost"
+                  size="sm"
+                  className={`relative flex flex-col items-center space-y-0.5 min-w-[60px] h-12 transition-all duration-300 px-2 ${
+                    currentMode === gameMode.id 
+                      ? 'bg-primary/20 text-primary shadow-neon scale-105 border border-primary/50' 
+                      : 'hover:bg-muted/50 text-muted-foreground hover:scale-102'
+                  }`}
+                  onClick={() => handleModeChange(gameMode.id)}
+                >
+                  <span className="text-lg animate-bounce-gentle">{gameMode.icon}</span>
+                  <span className="text-[10px] font-medium hidden sm:block">{gameMode.title}</span>
+                  {currentMode === gameMode.id && (
+                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></div>
+                  )}
+                </Button>
+              ))}
+            </div>
           </div>
           
-          {/* Settings Menu */}
+          {/* Modern Settings Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="ml-2 p-1.5 h-8 w-8">
+              <Button variant="ghost" size="sm" className="ml-2 p-2 h-10 w-10 hover:bg-primary/20 hover:text-primary transition-all duration-300 hover:scale-105">
                 <Settings className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => setSoundEnabled(!soundEnabled)}>
-                {soundEnabled ? <Volume2 className="mr-2 h-4 w-4" /> : <VolumeX className="mr-2 h-4 w-4" />}
+            <DropdownMenuContent align="end" className="w-52 bg-card/95 backdrop-blur-lg border-primary/20">
+              <DropdownMenuItem 
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className="hover:bg-primary/10 hover:text-primary transition-colors duration-200"
+              >
+                {soundEnabled ? <Volume2 className="mr-3 h-4 w-4" /> : <VolumeX className="mr-3 h-4 w-4" />}
                 {soundEnabled ? 'Turn Off Sound' : 'Turn On Sound'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={showHowToPlay}>
-                <HelpCircle className="mr-2 h-4 w-4" />
+              <DropdownMenuItem 
+                onClick={showHowToPlay}
+                className="hover:bg-secondary/10 hover:text-secondary transition-colors duration-200"
+              >
+                <HelpCircle className="mr-3 h-4 w-4" />
                 How to Play
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={showTestAd}>
-                <Gift className="mr-2 h-4 w-4" />
+              <DropdownMenuItem 
+                onClick={showTestAd}
+                className="hover:bg-accent/10 hover:text-accent transition-colors duration-200"
+              >
+                <Gift className="mr-3 h-4 w-4" />
                 Show Test Ad
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onHome}>
-                <Home className="mr-2 h-4 w-4" />
+              <DropdownMenuItem 
+                onClick={onHome}
+                className="hover:bg-destructive/10 hover:text-destructive transition-colors duration-200"
+              >
+                <Home className="mr-3 h-4 w-4" />
                 Exit Game
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -291,13 +318,17 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-3 space-y-4 pb-0 overflow-y-auto">
+      {/* Modern Main Content */}
+      <div className="relative flex-1 p-4 space-y-4 pb-20 overflow-y-auto">
         {/* Lives Refill Timer */}
         {livesRefillTimer !== null && livesRefillTimer > 0 && (
-          <Card className="p-3 bg-gradient-to-r from-red-500/20 to-pink-500/20 border-red-300 animate-fade-in">
-            <div className="text-center">
-              <div className="text-base font-bold text-red-600 mb-1">Lives Refilling...</div>
+          <Card className="relative overflow-hidden p-4 bg-gradient-to-r from-error/20 via-destructive/20 to-neon-pink/20 border border-error/50 animate-slide-up">
+            <div className="absolute inset-0 bg-gradient-to-r from-error/10 to-neon-pink/10 animate-glow-pulse"></div>
+            <div className="relative text-center space-y-2">
+              <div className="flex items-center justify-center space-x-2">
+                <Heart className="w-5 h-5 text-error animate-bounce" />
+                <span className="text-lg font-bold text-error">Lives Refilling...</span>
+              </div>
               <div className="text-sm text-muted-foreground">
                 Next life in: {Math.floor(livesRefillTimer / 60)}:{(livesRefillTimer % 60).toString().padStart(2, '0')}
               </div>
@@ -305,52 +336,76 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
           </Card>
         )}
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <Card className="p-2 sm:p-3 text-center bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-300 transition-all duration-300 hover:scale-105">
-            <div className="flex items-center justify-center space-x-1 sm:space-x-2 mb-1">
-              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
-              <span className="text-base sm:text-lg font-bold text-blue-600">{stats.timeLeft}s</span>
+        {/* Modern Stats Bar */}
+        <div className="grid grid-cols-3 gap-3">
+          <Card className="relative overflow-hidden p-3 text-center bg-gradient-to-br from-neon-blue/20 via-secondary/20 to-neon-blue/30 border border-secondary/50 transition-all duration-300 hover:scale-105 hover:shadow-neon">
+            <div className="absolute inset-0 bg-gradient-secondary opacity-5 animate-glow-pulse"></div>
+            <div className="relative">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-secondary animate-pulse" />
+                <span className="text-lg sm:text-xl font-bold text-secondary">{stats.timeLeft}s</span>
+              </div>
+              <div className="text-xs text-muted-foreground font-medium">Time Left</div>
             </div>
-            <div className="text-xs text-muted-foreground">Time</div>
           </Card>
           
-          <Card className="p-2 sm:p-3 text-center bg-gradient-to-br from-red-500/20 to-red-600/20 border-red-300 transition-all duration-300 hover:scale-105">
-            <div className="flex items-center justify-center space-x-1 sm:space-x-2 mb-1">
-              <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />
-              <span className="text-base sm:text-lg font-bold text-red-600">{stats.lives}</span>
+          <Card className="relative overflow-hidden p-3 text-center bg-gradient-to-br from-error/20 via-destructive/20 to-neon-pink/30 border border-error/50 transition-all duration-300 hover:scale-105 hover:shadow-neon">
+            <div className="absolute inset-0 bg-gradient-to-r from-error/5 to-neon-pink/5 animate-glow-pulse"></div>
+            <div className="relative">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-error animate-bounce-gentle" />
+                <span className="text-lg sm:text-xl font-bold text-error">{stats.lives}</span>
+              </div>
+              <div className="text-xs text-muted-foreground font-medium">Lives</div>
             </div>
-            <div className="text-xs text-muted-foreground">Lives</div>
           </Card>
           
-          <Card className="p-2 sm:p-3 text-center bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-300 transition-all duration-300 hover:scale-105">
-            <div className="flex items-center justify-center space-x-1 sm:space-x-2 mb-1">
-              <Target className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
-              <span className="text-base sm:text-lg font-bold text-green-600">L{stats.level}</span>
+          <Card className="relative overflow-hidden p-3 text-center bg-gradient-to-br from-success/20 via-neon-green/20 to-success/30 border border-success/50 transition-all duration-300 hover:scale-105 hover:shadow-neon">
+            <div className="absolute inset-0 bg-gradient-to-r from-success/5 to-neon-green/5 animate-glow-pulse"></div>
+            <div className="relative">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-success animate-bounce-gentle" />
+                <span className="text-lg sm:text-xl font-bold text-success">L{stats.level}</span>
+              </div>
+              <div className="text-xs text-muted-foreground font-medium">Level</div>
             </div>
-            <div className="text-xs text-muted-foreground">Level</div>
           </Card>
         </div>
 
-        {/* Target Display */}
-        <div className="space-y-3">
-          <Card className="p-3 sm:p-4 bg-gradient-to-r from-primary/20 to-secondary/20 border-primary animate-fade-in">
-            <div className="text-center">
-              <div className="text-xs sm:text-sm text-muted-foreground mb-2">Find this target:</div>
-              <div className={`text-3xl sm:text-4xl font-bold transition-all duration-300 ${showHint ? 'animate-pulse scale-110 text-primary shadow-neon' : 'text-foreground'}`}>{target}</div>
+        {/* Modern Target Display */}
+        <div className="space-y-4">
+          <Card className="relative overflow-hidden p-6 bg-gradient-primary/10 border border-primary/30 animate-fade-in">
+            <div className="absolute inset-0 bg-gradient-primary opacity-5 animate-glow-pulse"></div>
+            <div className="relative text-center space-y-4">
+              <div className="flex items-center justify-center space-x-2">
+                <Target className="w-5 h-5 text-primary animate-pulse" />
+                <span className="text-sm text-muted-foreground font-medium">Find Your Target</span>
+              </div>
+              <div className={`relative inline-block text-5xl sm:text-6xl font-bold transition-all duration-500 ${
+                showHint 
+                  ? 'animate-glow-pulse scale-125 text-primary shadow-neon-lg' 
+                  : 'text-foreground hover:scale-110'
+              }`}>
+                {target}
+                {showHint && (
+                  <div className="absolute inset-0 bg-primary/20 rounded-xl animate-pulse"></div>
+                )}
+              </div>
             </div>
           </Card>
 
-          {/* Hint and Reset Buttons */}
-          <div className="flex space-x-2 justify-center">
+          {/* Modern Action Buttons */}
+          <div className="flex space-x-3 justify-center">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleHint}
-              className="space-x-1.5 text-xs hover-scale"
+              className="group relative space-x-2 text-sm border-accent/50 text-accent hover:bg-accent/10 hover:scale-105 transition-all duration-300"
             >
-              <Zap className="h-3 w-3" />
-              <span className="hidden sm:inline">Hint {hintsUsed >= 3 ? '(Watch Ad)' : `(${3 - hintsUsed} left)`}</span>
+              <Zap className="h-4 w-4 group-hover:animate-bounce" />
+              <span className="hidden sm:inline">
+                {hintsUsed >= 3 ? 'Watch Ad' : `${3 - hintsUsed} Hints Left`}
+              </span>
               <span className="sm:hidden">Hint</span>
             </Button>
             
@@ -358,41 +413,50 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
               variant="outline" 
               size="sm" 
               onClick={initializeGame}
-              className="space-x-1.5 text-xs hover-scale"
+              className="group space-x-2 text-sm border-secondary/50 text-secondary hover:bg-secondary/10 hover:scale-105 transition-all duration-300"
             >
-              <RotateCcw className="h-3 w-3" />
-              <span className="hidden sm:inline">Reset</span>
+              <RotateCcw className="h-4 w-4 group-hover:animate-spin" />
+              <span className="hidden sm:inline">Reset Level</span>
+              <span className="sm:hidden">Reset</span>
             </Button>
           </div>
         </div>
 
-        {/* Game Grid */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 max-w-sm sm:max-w-md mx-auto mb-4">
+        {/* Modern Game Grid */}
+        <div className="grid grid-cols-4 gap-3 max-w-sm sm:max-w-lg mx-auto mb-6">
           {cards.map((card) => (
             <Card
               key={card.id}
               className={`
-                aspect-square flex items-center justify-center text-base sm:text-lg md:text-xl font-bold text-foreground cursor-pointer
-                transition-all duration-300 game-card min-h-[50px] sm:min-h-[60px] md:min-h-[70px]
+                relative aspect-square flex items-center justify-center text-lg sm:text-xl md:text-2xl font-bold cursor-pointer
+                transition-all duration-500 ease-out min-h-[60px] sm:min-h-[75px] md:min-h-[85px] overflow-hidden group
                 ${card.isSelected 
                   ? card.state === 'correct' 
-                    ? 'bg-green-500 text-white scale-110 shadow-lg shadow-green-500/50 animate-scale-in' 
-                    : 'bg-red-500 text-white scale-95 shadow-lg shadow-red-500/50 animate-fade-out'
-                  : 'bg-card hover:bg-muted hover:scale-105 border border-border hover:border-primary/50 hover-scale'
+                    ? 'bg-gradient-to-br from-success via-neon-green to-success/80 text-white scale-110 shadow-neon-lg animate-scale-in border-2 border-success' 
+                    : 'bg-gradient-to-br from-error via-destructive to-error/80 text-white scale-95 shadow-neon animate-fade-out border-2 border-error'
+                  : 'bg-gradient-to-br from-card via-card/90 to-muted/20 text-foreground hover:scale-105 border border-border hover:border-primary/70 hover:shadow-neon-sm hover:bg-gradient-to-br hover:from-primary/5 hover:to-secondary/5'
                 }
               `}
               onClick={() => handleCardClick(card)}
             >
-              {card.content}
+              <div className="relative z-10 transition-all duration-300 group-hover:animate-bounce-gentle">
+                {card.content}
+              </div>
+              {!card.isSelected && (
+                <div className="absolute inset-0 bg-gradient-primary opacity-0 group-hover:opacity-5 transition-opacity duration-300"></div>
+              )}
+              {card.isSelected && card.state === 'correct' && (
+                <div className="absolute inset-0 bg-gradient-to-br from-success/20 to-neon-green/20 animate-glow-pulse"></div>
+              )}
             </Card>
           ))}
         </div>
       </div>
 
-      {/* Sticky Ad Banner */}
-      <div className="bg-card border-t border-border p-2 text-center">
-        <div className="text-xs text-muted-foreground bg-muted/20 rounded px-2 py-1">
-          Test Ad Banner
+      {/* Modern Sticky Ad Banner */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-primary/20 p-3 text-center z-20">
+        <div className="text-xs text-muted-foreground bg-gradient-to-r from-muted/30 via-primary/10 to-muted/30 rounded-lg px-3 py-2 max-w-xs mx-auto">
+          🎮 Test Ad Banner - EMOJI QUEST
         </div>
       </div>
 
