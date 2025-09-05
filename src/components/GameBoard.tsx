@@ -7,6 +7,9 @@ import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils
 import { useToast } from '@/hooks/use-toast';
 import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Gift, Crown, Star, Trophy } from 'lucide-react';
 import logoImage from '@/assets/emoji-quest-logo.png';
+import BannerAd from '@/components/ads/BannerAd';
+import RewardedAd from '@/components/ads/RewardedAd';
+import InterstitialAd from '@/components/ads/InterstitialAd';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +38,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
   const [showHint, setShowHint] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [showRewardAd, setShowRewardAd] = useState(false);
+  const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [currentMode, setCurrentMode] = useState(mode);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [stats, setStats] = useState<GameStats>({
@@ -163,6 +167,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
           duration: 2000,
         });
       }
+
+      // Show interstitial ad every 5 levels
+      if (newLevel % 5 === 0) {
+        setShowInterstitialAd(true);
+      }
       
       saveGameProgress(newLevel, mode, newScore);
       
@@ -209,10 +218,15 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
   const handleRewardAdComplete = () => {
     setShowRewardAd(false);
     setShowHint(true);
+    setHintsUsed(0); // Reset hints after watching ad
     
     setTimeout(() => {
       setShowHint(false);
     }, 3000);
+  };
+
+  const handleInterstitialAdClosed = () => {
+    setShowInterstitialAd(false);
   };
 
   const handleModeChange = (newMode: GameMode) => {
@@ -300,11 +314,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
                 How to Play
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={showTestAd}
+                onClick={() => setShowRewardAd(true)}
                 className="hover:bg-accent/10 hover:text-accent transition-colors duration-200"
               >
                 <Gift className="mr-3 h-4 w-4" />
-                Show Test Ad
+                Watch Rewarded Ad
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={onHome}
@@ -396,18 +410,26 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
 
           {/* Modern Action Buttons */}
           <div className="flex space-x-3 justify-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleHint}
-              className="group relative space-x-2 text-sm border-accent/50 text-accent hover:bg-accent/10 hover:scale-105 transition-all duration-300"
-            >
-              <Zap className="h-4 w-4 group-hover:animate-bounce" />
-              <span className="hidden sm:inline">
-                {hintsUsed >= 3 ? 'Watch Ad' : `${3 - hintsUsed} Hints Left`}
-              </span>
-              <span className="sm:hidden">Hint</span>
-            </Button>
+            {hintsUsed >= 3 ? (
+              <RewardedAd 
+                adUnitId="4203085766"
+                onAdComplete={handleRewardAdComplete}
+              >
+                <span className="hidden sm:inline">Watch Ad for Hints</span>
+                <span className="sm:hidden">Watch Ad</span>
+              </RewardedAd>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleHint}
+                className="group relative space-x-2 text-sm border-accent/50 text-accent hover:bg-accent/10 hover:scale-105 transition-all duration-300"
+              >
+                <Zap className="h-4 w-4 group-hover:animate-bounce" />
+                <span className="hidden sm:inline">{3 - hintsUsed} Hints Left</span>
+                <span className="sm:hidden">Hint</span>
+              </Button>
+            )}
             
             <Button 
               variant="outline" 
@@ -454,10 +476,8 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
       </div>
 
       {/* Modern Sticky Ad Banner */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-primary/20 p-3 text-center z-20">
-        <div className="text-xs text-muted-foreground bg-gradient-to-r from-muted/30 via-primary/10 to-muted/30 rounded-lg px-3 py-2 max-w-xs mx-auto">
-          🎮 Test Ad Banner - EMOJI QUEST
-        </div>
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-primary/20 p-2 text-center z-20">
+        <BannerAd adUnitId="3126626058" width={320} height={50} />
       </div>
 
       {/* Reward Ad Modal */}
@@ -470,15 +490,26 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
               <p className="text-sm text-muted-foreground">Watch a reward ad to get more hints</p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleRewardAdComplete} className="flex-1" size="sm">
+              <RewardedAd 
+                adUnitId="4203085766"
+                onAdComplete={handleRewardAdComplete}
+              >
                 Watch Ad
-              </Button>
+              </RewardedAd>
               <Button variant="outline" onClick={() => setShowRewardAd(false)} className="flex-1" size="sm">
                 Cancel
               </Button>
             </div>
           </Card>
         </div>
+      )}
+
+      {/* Interstitial Ad */}
+      {showInterstitialAd && (
+        <InterstitialAd 
+          adUnitId="3339261890"
+          onAdClosed={handleInterstitialAdClosed}
+        />
       )}
     </div>
   );
