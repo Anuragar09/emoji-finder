@@ -7,9 +7,6 @@ import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils
 import { useToast } from '@/hooks/use-toast';
 import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Gift, Crown, Star, Trophy } from 'lucide-react';
 import logoImage from '@/assets/emoji-quest-logo.png';
-import BannerAd from '@/components/ads/BannerAd';
-import RewardedAd from '@/components/ads/RewardedAd';
-import InterstitialAd from '@/components/ads/InterstitialAd';
 import { 
   DropdownMenu,
   DropdownMenuContent,
