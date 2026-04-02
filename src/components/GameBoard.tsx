@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { GameCard, GameState, GameMode, GameStats } from '@/types/game';
 import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils';
 import { useToast } from '@/hooks/use-toast';
-import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Gift, Crown, Star, Trophy } from 'lucide-react';
+import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Crown, Star, Trophy } from 'lucide-react';
 import logoImage from '@/assets/emoji-quest-logo.png';
 import { 
   DropdownMenu,
