@@ -473,37 +473,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
       </div>
 
 
-      {/* Reward Ad Modal */}
-      {showRewardAd && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <Card className="p-6 max-w-sm mx-4 text-center space-y-4 animate-scale-in">
-            <div className="text-4xl">🎁</div>
-            <div>
-              <h3 className="text-lg font-bold mb-2">Watch Ad for Hints</h3>
-              <p className="text-sm text-muted-foreground">Watch a reward ad to get more hints</p>
-            </div>
-            <div className="flex gap-2">
-              <RewardedAd 
-                adUnitId="4203085766"
-                onAdComplete={handleRewardAdComplete}
-              >
-                Watch Ad
-              </RewardedAd>
-              <Button variant="outline" onClick={() => setShowRewardAd(false)} className="flex-1" size="sm">
-                Cancel
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Interstitial Ad */}
-      {showInterstitialAd && (
-        <InterstitialAd 
-          adUnitId="3339261890"
-          onAdClosed={handleInterstitialAdClosed}
-        />
-      )}
     </div>
   );
 };
