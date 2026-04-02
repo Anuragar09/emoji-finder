@@ -163,10 +163,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
         });
       }
 
-      // Show interstitial ad every 5 levels
-      if (newLevel % 5 === 0) {
-        setShowInterstitialAd(true);
-      }
       
       saveGameProgress(newLevel, mode, newScore);
       
