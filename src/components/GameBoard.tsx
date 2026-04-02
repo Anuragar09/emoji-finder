@@ -472,10 +472,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
         </div>
       </div>
 
-      {/* Modern Sticky Ad Banner */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-primary/20 p-2 text-center z-20">
-        <BannerAd adUnitId="3126626058" width={320} height={50} />
-      </div>
 
       {/* Reward Ad Modal */}
       {showRewardAd && (
