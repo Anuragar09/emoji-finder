@@ -197,10 +197,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
   };
 
   const handleHint = () => {
-    if (hintsUsed >= 3) {
-      setShowRewardAd(true);
-      return;
-    }
+    if (hintsUsed >= 3) return;
     
     setShowHint(true);
     setHintsUsed(prev => prev + 1);
