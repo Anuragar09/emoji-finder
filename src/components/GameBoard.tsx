@@ -309,13 +309,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
                 How to Play
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => setShowRewardAd(true)}
-                className="hover:bg-accent/10 hover:text-accent transition-colors duration-200"
-              >
-                <Gift className="mr-3 h-4 w-4" />
-                Watch Rewarded Ad
-              </DropdownMenuItem>
-              <DropdownMenuItem 
                 onClick={onHome}
                 className="hover:bg-destructive/10 hover:text-destructive transition-colors duration-200"
               >
