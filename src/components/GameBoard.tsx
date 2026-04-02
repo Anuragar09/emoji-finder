@@ -305,7 +305,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
       </div>
 
       {/* Modern Main Content */}
-      <div className="relative flex-1 p-4 space-y-4 pb-20 overflow-y-auto">
+      <div className="relative flex-1 p-4 space-y-4 pb-4 overflow-y-auto">
         {/* Lives Refill Timer */}
         {livesRefillTimer !== null && livesRefillTimer > 0 && (
           <Card className="relative overflow-hidden p-4 bg-gradient-to-r from-error/20 via-destructive/20 to-neon-pink/20 border border-error/50 animate-slide-up">
@@ -382,7 +382,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
 
           {/* Modern Action Buttons */}
           <div className="flex space-x-3 justify-center">
-          {hintsUsed < 3 ? (
+            {hintsUsed < 3 ? (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -393,7 +393,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
                 <span className="hidden sm:inline">{3 - hintsUsed} Hints Left</span>
                 <span className="sm:hidden">Hint</span>
               </Button>
-          ) : (
+            ) : (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -405,7 +405,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
               </Button>
             )}
             
-            <Button
+            <Button 
               variant="outline" 
               size="sm" 
               onClick={initializeGame}
@@ -419,7 +419,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
         </div>
 
         {/* Modern Game Grid */}
-        <div className="grid grid-cols-4 gap-3 max-w-sm sm:max-w-lg mx-auto mb-6">
+        <div className="grid grid-cols-4 gap-3 max-w-sm sm:max-w-lg mx-auto">
           {cards.map((card) => (
             <Card
               key={card.id}
