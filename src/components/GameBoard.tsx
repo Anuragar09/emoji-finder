@@ -5,11 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { GameCard, GameState, GameMode, GameStats } from '@/types/game';
 import { generateGameData, playSound, saveGameProgress } from '@/utils/gameUtils';
 import { useToast } from '@/hooks/use-toast';
-import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Gift, Crown, Star, Trophy } from 'lucide-react';
+import { Heart, Clock, Target, Zap, Home, RotateCcw, Settings, Volume2, VolumeX, HelpCircle, Crown, Star, Trophy } from 'lucide-react';
 import logoImage from '@/assets/emoji-quest-logo.png';
-import BannerAd from '@/components/ads/BannerAd';
-import RewardedAd from '@/components/ads/RewardedAd';
-import InterstitialAd from '@/components/ads/InterstitialAd';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -37,8 +34,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
   const [gameState, setGameState] = useState<GameState>('playing');
   const [showHint, setShowHint] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
-  const [showRewardAd, setShowRewardAd] = useState(false);
-  const [showInterstitialAd, setShowInterstitialAd] = useState(false);
   const [currentMode, setCurrentMode] = useState(mode);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [stats, setStats] = useState<GameStats>({
@@ -168,10 +163,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
         });
       }
 
-      // Show interstitial ad every 5 levels
-      if (newLevel % 5 === 0) {
-        setShowInterstitialAd(true);
-      }
       
       saveGameProgress(newLevel, mode, newScore);
       
@@ -202,10 +193,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
   };
 
   const handleHint = () => {
-    if (hintsUsed >= 3) {
-      setShowRewardAd(true);
-      return;
-    }
+    if (hintsUsed >= 3) return;
     
     setShowHint(true);
     setHintsUsed(prev => prev + 1);
@@ -215,19 +203,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
     }, 3000);
   };
 
-  const handleRewardAdComplete = () => {
-    setShowRewardAd(false);
-    setShowHint(true);
-    setHintsUsed(0); // Reset hints after watching ad
-    
-    setTimeout(() => {
-      setShowHint(false);
-    }, 3000);
-  };
-
-  const handleInterstitialAdClosed = () => {
-    setShowInterstitialAd(false);
-  };
 
   const handleModeChange = (newMode: GameMode) => {
     if (newMode !== currentMode) {
@@ -314,13 +289,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
                 How to Play
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => setShowRewardAd(true)}
-                className="hover:bg-accent/10 hover:text-accent transition-colors duration-200"
-              >
-                <Gift className="mr-3 h-4 w-4" />
-                Watch Rewarded Ad
-              </DropdownMenuItem>
-              <DropdownMenuItem 
                 onClick={onHome}
                 className="hover:bg-destructive/10 hover:text-destructive transition-colors duration-200"
               >
@@ -333,7 +301,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
       </div>
 
       {/* Modern Main Content */}
-      <div className="relative flex-1 p-4 space-y-4 pb-20 overflow-y-auto">
+      <div className="relative flex-1 p-4 space-y-4 pb-4 overflow-y-auto">
         {/* Lives Refill Timer */}
         {livesRefillTimer !== null && livesRefillTimer > 0 && (
           <Card className="relative overflow-hidden p-4 bg-gradient-to-r from-error/20 via-destructive/20 to-neon-pink/20 border border-error/50 animate-slide-up">
@@ -410,15 +378,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
 
           {/* Modern Action Buttons */}
           <div className="flex space-x-3 justify-center">
-            {hintsUsed >= 3 ? (
-              <RewardedAd 
-                adUnitId="4203085766"
-                onAdComplete={handleRewardAdComplete}
-              >
-                <span className="hidden sm:inline">Watch Ad for Hints</span>
-                <span className="sm:hidden">Watch Ad</span>
-              </RewardedAd>
-            ) : (
+            {hintsUsed < 3 ? (
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -428,6 +388,16 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
                 <Zap className="h-4 w-4 group-hover:animate-bounce" />
                 <span className="hidden sm:inline">{3 - hintsUsed} Hints Left</span>
                 <span className="sm:hidden">Hint</span>
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => { setHintsUsed(0); handleHint(); }}
+                className="group relative space-x-2 text-sm border-accent/50 text-accent hover:bg-accent/10 hover:scale-105 transition-all duration-300"
+              >
+                <Zap className="h-4 w-4 group-hover:animate-bounce" />
+                <span>Reset Hints</span>
               </Button>
             )}
             
@@ -445,7 +415,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
         </div>
 
         {/* Modern Game Grid */}
-        <div className="grid grid-cols-4 gap-3 max-w-sm sm:max-w-lg mx-auto mb-6">
+        <div className="grid grid-cols-4 gap-3 max-w-sm sm:max-w-lg mx-auto">
           {cards.map((card) => (
             <Card
               key={card.id}
@@ -475,42 +445,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
         </div>
       </div>
 
-      {/* Modern Sticky Ad Banner */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-primary/20 p-2 text-center z-20">
-        <BannerAd adUnitId="3126626058" width={320} height={50} />
-      </div>
 
-      {/* Reward Ad Modal */}
-      {showRewardAd && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <Card className="p-6 max-w-sm mx-4 text-center space-y-4 animate-scale-in">
-            <div className="text-4xl">🎁</div>
-            <div>
-              <h3 className="text-lg font-bold mb-2">Watch Ad for Hints</h3>
-              <p className="text-sm text-muted-foreground">Watch a reward ad to get more hints</p>
-            </div>
-            <div className="flex gap-2">
-              <RewardedAd 
-                adUnitId="4203085766"
-                onAdComplete={handleRewardAdComplete}
-              >
-                Watch Ad
-              </RewardedAd>
-              <Button variant="outline" onClick={() => setShowRewardAd(false)} className="flex-1" size="sm">
-                Cancel
-              </Button>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Interstitial Ad */}
-      {showInterstitialAd && (
-        <InterstitialAd 
-          adUnitId="3339261890"
-          onAdClosed={handleInterstitialAdClosed}
-        />
-      )}
     </div>
   );
 };
