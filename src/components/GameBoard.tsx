@@ -210,19 +210,6 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
     }, 3000);
   };
 
-  const handleRewardAdComplete = () => {
-    setShowRewardAd(false);
-    setShowHint(true);
-    setHintsUsed(0); // Reset hints after watching ad
-    
-    setTimeout(() => {
-      setShowHint(false);
-    }, 3000);
-  };
-
-  const handleInterstitialAdClosed = () => {
-    setShowInterstitialAd(false);
-  };
 
   const handleModeChange = (newMode: GameMode) => {
     if (newMode !== currentMode) {
