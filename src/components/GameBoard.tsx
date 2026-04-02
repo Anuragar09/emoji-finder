@@ -407,15 +407,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
 
           {/* Modern Action Buttons */}
           <div className="flex space-x-3 justify-center">
-            {hintsUsed >= 3 ? (
-              <RewardedAd 
-                adUnitId="4203085766"
-                onAdComplete={handleRewardAdComplete}
-              >
-                <span className="hidden sm:inline">Watch Ad for Hints</span>
-                <span className="sm:hidden">Watch Ad</span>
-              </RewardedAd>
-            ) : (
+          {hintsUsed < 3 ? (
               <Button 
                 variant="outline" 
                 size="sm" 
