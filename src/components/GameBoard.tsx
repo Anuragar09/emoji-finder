@@ -418,9 +418,19 @@ const GameBoard: React.FC<GameBoardProps> = ({ mode, initialLevel, onExit, onHom
                 <span className="hidden sm:inline">{3 - hintsUsed} Hints Left</span>
                 <span className="sm:hidden">Hint</span>
               </Button>
+          ) : (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => { setHintsUsed(0); handleHint(); }}
+                className="group relative space-x-2 text-sm border-accent/50 text-accent hover:bg-accent/10 hover:scale-105 transition-all duration-300"
+              >
+                <Zap className="h-4 w-4 group-hover:animate-bounce" />
+                <span>Reset Hints</span>
+              </Button>
             )}
             
-            <Button 
+            <Button
               variant="outline" 
               size="sm" 
               onClick={initializeGame}
